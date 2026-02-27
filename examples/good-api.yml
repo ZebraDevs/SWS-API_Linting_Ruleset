@@ -5,7 +5,7 @@ info:
     A well-designed API for managing inventory items in Zebra warehouse systems.
     This API demonstrates proper OpenAPI specification practices and follows
     all Zebra Technologies API standards.
-  version: "2.1.1"
+  version: "2.1.2"
   contact:
     name: Zebra API Team
     email: savannasupport@zebra.com
