@@ -1,0 +1,334 @@
+openapi: 3.0.3
+info:
+  title: Zebra Inventory Management API
+  description: |
+    A well-designed API for managing inventory items in Zebra warehouse systems.
+    This API demonstrates proper OpenAPI specification practices and follows
+    all Zebra Technologies API standards.
+  version: "2.1.1"
+  contact:
+    name: Zebra API Team
+    email: savannasupport@zebra.com
+    url: https://developer.zebra.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.zebra.com/v2
+    description: Production server
+  - url: https://api-staging.zebra.com/v2
+    description: Staging server for testing
+
+security:
+  - ApiKeyAuth: []
+  - OAuth2: [read, write]
+
+paths:
+  /inventory-items:
+    get:
+      summary: Retrieve inventory items
+      description: |
+        Get a paginated list of inventory items with optional filtering.
+        Supports filtering by category, status, and location.
+      operationId: getInventoryItems
+      tags:
+        - Inventory
+      parameters:
+        - name: category
+          in: query
+          description: Filter by item category
+          required: false
+          schema:
+            type: string
+            example: "electronics"
+        - name: limit
+          in: query
+          description: Maximum number of items to return
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+            example: 20
+      responses:
+        '200':
+          description: Successfully retrieved inventory items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItemsResponse'
+              examples:
+                success:
+                  summary: Successful response with items
+                  value:
+                    items:
+                      - id: "item-123"
+                        name: "Wireless Scanner"
+                        category: "electronics"
+                        quantity: 150
+                        status: "available"
+                    totalCount: 1
+                    hasMore: false
+        '400':
+          description: Invalid request parameters
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '401':
+          description: Authentication required
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Create new inventory item
+      description: Add a new item to the inventory system
+      operationId: createInventoryItem
+      tags:
+        - Inventory
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateInventoryItem'
+      responses:
+        '201':
+          description: Inventory item created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItem'
+              examples:
+                created:
+                  summary: Successfully created item
+                  value:
+                    id: "item-456"
+                    name: "Mobile Computer"
+                    category: "electronics"
+                    quantity: 25
+                    status: "available"
+        '400':
+          description: Invalid input data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /inventory-items/{itemId}:
+    get:
+      summary: Get inventory item by ID
+      description: Retrieve details of a specific inventory item
+      operationId: getInventoryItemById
+      tags:
+        - Inventory
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          description: Unique identifier for the inventory item
+          schema:
+            type: string
+            pattern: '^item-[0-9]+$'
+            example: "item-123"
+      responses:
+        '200':
+          description: Inventory item found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItem'
+        '404':
+          description: Inventory item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Update inventory item
+      description: Update all fields of an existing inventory item
+      operationId: updateInventoryItem
+      tags:
+        - Inventory
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          description: Unique identifier for the inventory item
+          schema:
+            type: string
+            example: "item-123"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateInventoryItem'
+      responses:
+        '200':
+          description: Inventory item updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryItem'
+        '404':
+          description: Inventory item not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for authentication
+    OAuth2:
+      type: oauth2
+      flows:
+        authorizationCode:
+          authorizationUrl: https://auth.zebra.com/oauth/authorize
+          tokenUrl: https://auth.zebra.com/oauth/token
+          scopes:
+            read: Read access to inventory data
+            write: Write access to inventory data
+
+  schemas:
+    InventoryItem:
+      type: object
+      description: An inventory item in the system
+      required:
+        - id
+        - name
+        - category
+        - quantity
+        - status
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the inventory item
+          example: "item-123"
+        name:
+          type: string
+          description: Human-readable name of the item
+          example: "Wireless Scanner"
+        category:
+          type: string
+          description: Category classification of the item
+          example: "electronics"
+        quantity:
+          type: integer
+          description: Current quantity in stock
+          minimum: 0
+          example: 150
+        status:
+          type: string
+          description: Current availability status
+          enum: [available, reserved, discontinued]
+          example: "available"
+        createdAt:
+          type: string
+          format: date-time
+          description: Timestamp when the item was created
+          example: "2025-01-15T10:30:00Z"
+
+    CreateInventoryItem:
+      type: object
+      description: Data required to create a new inventory item
+      required:
+        - name
+        - category
+        - quantity
+      properties:
+        name:
+          type: string
+          description: Human-readable name of the item
+          example: "Mobile Computer"
+        category:
+          type: string
+          description: Category classification of the item
+          example: "electronics"
+        quantity:
+          type: integer
+          description: Initial quantity in stock
+          minimum: 0
+          example: 25
+
+    UpdateInventoryItem:
+      type: object
+      description: Data for updating an existing inventory item
+      properties:
+        name:
+          type: string
+          description: Human-readable name of the item
+          example: "Updated Mobile Computer"
+        category:
+          type: string
+          description: Category classification of the item
+          example: "electronics"
+        quantity:
+          type: integer
+          description: Updated quantity in stock
+          minimum: 0
+          example: 30
+        status:
+          type: string
+          description: Updated availability status
+          enum: [available, reserved, discontinued]
+          example: "available"
+
+    InventoryItemsResponse:
+      type: object
+      description: Response containing multiple inventory items
+      required:
+        - items
+        - totalCount
+        - hasMore
+      properties:
+        items:
+          type: array
+          description: Array of inventory items
+          items:
+            $ref: '#/components/schemas/InventoryItem'
+        totalCount:
+          type: integer
+          description: Total number of items matching the query
+          example: 1
+        hasMore:
+          type: boolean
+          description: Whether there are more items available
+          example: false
+
+    ErrorResponse:
+      type: object
+      description: Standard error response format
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error code identifier
+          example: "INVALID_REQUEST"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "The request parameters are invalid"
+        details:
+          type: array
+          description: Additional error details
+          items:
+            type: string
+          example: ["Field 'category' is required"]
+
+tags:
+  - name: Inventory
+    description: Operations related to inventory management
+    externalDocs:
+      description: Inventory Management Guide
+      url: https://docs.zebra.com/inventory

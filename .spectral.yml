@@ -1,0 +1,264 @@
+# Zebra Technologies Shared API Style Rules
+# Version: 1.0.0
+# Description: Centralized Spectral ruleset for all Zebra Technologies APIs
+# Last Updated: November 2025
+
+extends: spectral:oas
+
+documentationUrl: https://confluence.zebra.com/spaces/SSAS/pages/34043
+
+rules:
+  # ========================================
+  # SECURITY RULES
+  # ========================================
+  
+  oas3-protocol-https-only: 
+    description: "ALL requests MUST go through HTTPS protocol only"
+    formats: [oas3]
+    severity: error
+    message: "Servers MUST be HTTPS and no other protocol is allowed."
+    given: $.servers..url
+    then:
+      function: pattern
+      functionOptions:
+        match: "/^https:/"
+
+  oas3-security-section-required:
+    description: "The API contract MUST include a 'security' section at the root level"
+    severity: error
+    formats: [oas2, oas3]
+    given: "$"
+    then:
+      field: "security"
+      function: truthy
+
+  oas3-components-required:
+    description: "The API contract MUST include a 'components' section"
+    severity: error
+    formats: [oas2, oas3]
+    given: "$"
+    then:
+      field: "components"
+      function: truthy
+
+  oas3-security-schemes-required:
+    description: "The API contract MUST include 'securitySchemes' under components"
+    severity: error
+    formats: [oas2, oas3]
+    given: "$.components"
+    then:
+      field: "securitySchemes"
+      function: truthy
+
+  # ========================================
+  # DOCUMENTATION RULES
+  # ========================================
+  
+  info-contact: error
+  info-description: error
+  operation-description: error
+  operation-operationId: error
+  operation-operationId-unique: error
+  operation-success-response: error
+  operation-tag-defined: error
+
+  zebra-tags-description:
+    description: "All tags should have descriptions"
+    severity: warn
+    given: $.tags[*]
+    then:
+      field: description
+      function: truthy
+
+  response-should-have-body:
+    description: "All responses must include a content section"
+    message: "Response for status code '{{property}}' is missing a content section"
+    severity: error
+    given: $.paths[*][*].responses[*]
+    then:
+      field: content
+      function: truthy
+
+  # ========================================
+  # VERSIONING RULES
+  # ========================================
+  
+  zebra-api-version:
+    description: "API version must be specified in info.version"
+    severity: error
+    given: $.info
+    then:
+      field: version
+      function: truthy
+
+  version-in-server-or-path:
+    description: "API should include version in server URL or path"
+    message: "Neither server URL nor path contains a version number (e.g., /v1/, /v2/)"
+    severity: error
+    given: "$"
+    then:
+      function: pattern
+      functionOptions:
+        match: "(\\/v[0-9]+(\\/|$)|\"url\":\\s*\"[^\"]*\\/v[0-9]+[^\"]*\")"
+
+  # ========================================
+  # HTTP METHOD RULES
+  # ========================================
+  
+  oas3-no-get-request-body:
+    description: "GET requests MUST NOT have a request body"
+    severity: error
+    formats: [oas2, oas3]
+    given: "$.paths[*].get.requestBody"
+    then:
+      function: falsy
+
+  oas3-put-with-request-body:
+    description: "PUT requests MUST have a request body"
+    severity: error
+    formats: [oas2, oas3]
+    given: "$.paths[*].put"
+    then:
+      field: "requestBody"
+      function: truthy
+
+  oas3-not-post-to-get-info:
+    description: "POST should not be used for retrieving information"
+    severity: warn
+    formats: [oas2, oas3]
+    given: "$.paths[*].post"
+    then:
+      field: "summary"
+      function: pattern
+      functionOptions:
+        notMatch: "(retrieve|fetch|get|read)"
+
+  # ========================================
+  # CONTENT TYPE RULES
+  # ========================================
+  
+  oas3-request-support-json:
+    description: "Requests MUST support application/json media type"
+    formats: [oas3]
+    severity: error
+    given: $.paths.[*].requestBody.content[?(@property.indexOf('json') === -1)]^
+    then:
+      function: falsy
+
+  oas3-response-success-json:
+    description: "Success responses MUST be application/json"
+    severity: error
+    given: $.paths..responses[?(@property >= 200 && @property < 300 && @property != 204)].content[*]~
+    formats: [oas3]
+    then:
+      function: enumeration
+      functionOptions:
+        values:
+          - application/json
+
+  # ========================================
+  # PATH AND NAMING RULES
+  # ========================================
+  
+  paths-kebab-case:
+    description: "Paths should be kebab-case"
+    message: "Path should be kebab-case (lowercase with hyphens)"
+    severity: warn
+    given: $.paths[*]~
+    then:
+      function: pattern
+      functionOptions:
+        match: "^(\/|[a-z0-9-.]+|{[a-zA-Z0-9_]+})+$"
+
+  oas3-no-verbs-in-paths:
+    description: "API paths MUST be resource-focused and not include verbs"
+    severity: error
+    given: $.paths[*]~
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: "\\b(get|update|create|delete|fetch|retrieve|search|list)\\b"
+
+  no-file-extensions-in-paths:
+    description: "Paths must not include file extensions"
+    severity: error
+    given: $.paths[*]~
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: "\\.(json|xml|html|txt)$"
+
+  path-should-have-at-least-one-plural-noun:
+    description: "Each path should contain at least one plural noun segment"
+    severity: error
+    given: $.paths[*]~
+    then:
+      function: pattern
+      functionOptions:
+        match: "(?<=/)[a-zA-Z0-9-]+s(?=/|$)"
+
+  path-should-not-include-api:
+    description: "The word 'api' should not appear in the path"
+    severity: error
+    given: $.paths[*]~
+    then:
+      function: pattern
+      functionOptions:
+        notMatch: "(?<=/)api(?=/|$)"
+
+  # ========================================
+  # PARAMETER NAMING RULES
+  # ========================================
+  
+  path-parameters-camelCase-alphanumeric:
+    description: "Path parameters MUST follow camelCase"
+    severity: error
+    given: $..parameters[?(@.in == 'path')].name
+    then:
+      function: pattern
+      functionOptions:
+        match: "^[a-z][a-zA-Z0-9]+$"
+
+  properties-camelCase-alphanumeric:
+    description: "JSON Schema properties MUST follow camelCase"
+    severity: error
+    given: $..properties[*]~
+    then:
+      function: pattern
+      functionOptions:
+        match: "^[a-z$_][a-zA-Z0-9$_]*$"
+
+  # ========================================
+  # ZEBRA-SPECIFIC RULES
+  # ========================================
+  
+  zebra-server-url:
+    description: "Server URL must be specified"
+    severity: error
+    given: $.servers
+    then:
+      function: truthy
+
+  zebra-server-description:
+    description: "Each server must have a description"
+    severity: warn
+    given: $.servers[*]
+    then:
+      field: description
+      function: truthy
+
+  zebra-response-examples:
+    description: "Responses should include examples"
+    severity: warn
+    given: $.paths[*][*].responses[*]
+    then:
+      field: examples
+      function: truthy
+
+  zebra-schema-properties-description:
+    description: "Schema properties should have descriptions"
+    severity: warn
+    given: $..properties[*]
+    then:
+      field: description
+      function: truthy

@@ -1,0 +1,80 @@
+openapi: 3.0.3
+info:
+  title: Bad API Example
+  # Missing: description, contact, version
+paths:
+  # Bad: HTTP verbs in paths, no versioning
+  /api/getUsers:
+    # Bad: GET with request body
+    get:
+      # Missing: summary, description, operationId, tags
+      parameters:
+        - name: user_id  # Bad: snake_case instead of camelCase
+          in: path
+          schema:
+            type: string
+      requestBody:  # Bad: GET requests shouldn't have request body
+        content:
+          text/xml:  # Bad: should be application/json
+            schema:
+              type: string
+      responses:
+        '200':
+          # Missing: content section (no response body defined)
+          description: "OK"
+
+  # Bad: File extension in path, verb in path
+  /createUser.json:
+    post:
+      # Missing: summary, description, operationId, tags
+      # Missing: requestBody for POST
+      responses:
+        '200':
+          description: "User created"
+          content:
+            text/plain:  # Bad: should be application/json
+              schema:
+                type: string
+
+  # Bad: No plural noun, verb in path
+  /updateUser:
+    put:
+      # Missing: requestBody which is required for PUT
+      responses:
+        200:  # Bad: should be string '200'
+          description: "Updated"
+          # Missing: content section
+
+  # Bad: Contains 'api' in path
+  /api/user:
+    delete:
+      responses:
+        '204':
+          description: "Deleted"
+          content:  # Bad: 204 responses shouldn't have content
+            application/json:
+              schema:
+                type: object
+
+servers:
+  # Bad: HTTP instead of HTTPS
+  - url: http://api.example.com
+    # Missing: description
+
+# Missing: security section (required)
+# Missing: components section (required)
+# Missing: components.securitySchemes (required)
+# Missing: tags definitions
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        user_name:  # Bad: snake_case instead of camelCase
+          type: string
+          # Missing: description
+        ID:  # Bad: should be camelCase (id)
+          type: integer
+          # Missing: description
+        # Missing: required fields
