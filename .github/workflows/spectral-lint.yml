@@ -68,7 +68,7 @@ jobs:
           
       - name: Setup Node.js
         if: steps.find-files.outputs.has_files == 'true'
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # Pinned to a specific commit
         with:
           node-version: '20'
           
